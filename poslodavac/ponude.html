@@ -172,6 +172,9 @@
         .popup button:hover {
             background-color: #0056b3;
         }
+        .offer-item.vozac {
+    background-color: #d4edda; /* Svetlo zelena boja */
+}
     </style>
 </head>
 <body>
@@ -329,34 +332,42 @@
         document.getElementById('offerForm').addEventListener('submit', addOffer);
 
         async function fetchOfferHistory() {
-            const userId = getUserId();
-            const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/PoslodavacID?poslodavac_id=${userId}`;
-            
-            try {
-                const response = await fetch(apiUrl);
-                const offerData = await response.json();
+    const userId = getUserId();
+    const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/PoslodavacID?poslodavac_id=${userId}`;
+    
+    try {
+        const response = await fetch(apiUrl);
+        const offerData = await response.json();
 
-                if (response.ok && Array.isArray(offerData) && offerData.length > 0) {
-                    const offerHistoryDiv = document.getElementById('offerHistory');
-                    offerHistoryDiv.innerHTML = '';
+        if (response.ok && Array.isArray(offerData) && offerData.length > 0) {
+            const offerHistoryDiv = document.getElementById('offerHistory');
+            offerHistoryDiv.innerHTML = '';
 
-                    offerData.forEach(offer => {
-                        const offerElement = document.createElement('div');
-                        offerElement.className = 'offer-item';
-                        offerElement.innerHTML = `
-                            <h3>${offer.NazivTereta}</h3>
-                            <button onclick="deleteOffer(${offer.Id})">X</button>
-                        `;
-                        offerElement.querySelector('h3').addEventListener('click', () => showOfferDetails(offer));
-                        offerHistoryDiv.appendChild(offerElement);
-                    });
+            offerData.forEach(offer => {
+                const offerElement = document.createElement('div');
+                offerElement.className = 'offer-item';
+
+                // Provera da li ponuda ima VozacId
+                if (offer.VozacId) {
+                    offerElement.style.backgroundColor = 'lightgreen'; // Dodaje svetlo zelenu pozadinu
+                    offerElement.innerHTML = `<h3>${offer.NazivTereta}</h3>`;
                 } else {
-                    document.getElementById('offerHistory').innerHTML = '<p>Trenutno nema ponuda.</p>';
+                    offerElement.innerHTML = `
+                        <h3>${offer.NazivTereta}</h3>
+                        <button onclick="deleteOffer(${offer.Id})">X</button>
+                    `;
                 }
-            } catch (error) {
-                alert('Došlo je do greške pri preuzimanju ponuda: ' + error.message);
-            }
+
+                offerElement.querySelector('h3').addEventListener('click', () => showOfferDetails(offer));
+                offerHistoryDiv.appendChild(offerElement);
+            });
+        } else {
+            document.getElementById('offerHistory').innerHTML = '<p>Trenutno nema ponuda.</p>';
         }
+    } catch (error) {
+        alert('Došlo je do greške pri preuzimanju ponuda: ' + error.message);
+    }
+}
 
         function showOfferDetails(offer) {
             document.getElementById('popupTitle').innerText = `${offer.NazivTereta} (${offer.VrstaTereta})`;

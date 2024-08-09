@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maldo-Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             display: flex;
@@ -15,6 +16,7 @@
             margin: 0;
             background-color: #f0f0f0;
             font-family: Arial, sans-serif;
+            margin-bottom: 50px;
         }
         nav {
             position: fixed;
@@ -48,7 +50,7 @@
             border-radius: 8px;
             width: 80%;
             max-width: 600px;
-            margin-top: 60px; /* da se ne preklapa sa navigacijom */
+            margin-top: 190px; /* da se ne preklapa sa navigacijom */
             text-align: center;
         }
         .dashboard h2 {
@@ -58,72 +60,82 @@
             margin: 10px 0;
             font-size: 18px;
         }
+        .zarada-chart {
+            margin-top: 30px;
+        }
         .ocene {
-    list-style-type: none;
-    padding: 0;
-    margin: 20px 0;
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    width: 100%; /* Povećava širinu da odgovara userInfo divu */
-    max-width: 600px; /* Ograničava maksimalnu širinu */
-}
-
-.ocena-item {
-    padding: 10px;
-    border-bottom: 1px solid #ccc;
-    margin-bottom: 10px;
-}
-
-.ocena-item:last-child {
-    border-bottom: none;
-}
-
-.ocena-item p {
-    margin: 0;
-    font-size: 16px;
-    color: #333;
-}
-/* Stilovi za popup prozor */
-.popup {
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80%;
-    max-width: 400px;
-    background-color: #fff;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    border-radius: 8px;
-    z-index: 1000;
-}
-
-.popup h3 {
-    margin-top: 0;
-}
-
-.popup p {
-    margin: 10px 0;
-}
-
-.popup button.popup-close {
-    background-color: #ff4d4d;
-    border: none;
-    color: #fff;
-    padding: 5px 10px;
-    cursor: pointer;
-    border-radius: 4px;
-    float: right;
-}
-
-.popup button.popup-close:hover {
-    background-color: #ff1a1a;
-}
-
-
+            list-style-type: none;
+            padding: 0;
+            margin: 20px 0;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        .ocena-item {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+        .ocena-item:last-child {
+            border-bottom: none;
+        }
+        .ocena-item p {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+        /* Stilovi za popup prozor */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            z-index: 1000;
+        }
+        .popup h3 {
+            margin-top: 0;
+        }
+        .popup p {
+            margin: 10px 0;
+        }
+        .popup button.popup-close {
+            background-color: #ff4d4d;
+            border: none;
+            color: #fff;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            float: right;
+        }
+        .popup button.popup-close:hover {
+            background-color: #ff1a1a;
+        }
+        .istorija-voznji {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .voznja-item {
+            padding: 15px;
+            border-bottom: 1px solid #ccc;
+        }
+        .voznja-item:last-child {
+            border-bottom: none;
+        }
+        .voznja-item p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -139,8 +151,9 @@
         <div id="userInfo">
             <!-- Podaci će biti popunjeni ovde -->
         </div>
+        <canvas id="zaradaChart" class="zarada-chart"></canvas> <!-- Mesto za grafikon zarade -->
     </section>
-
+    <ul class="istorija-voznji"></ul>
     <ul class="ocene"></ul>
     <div id="driverInfoPopup" class="popup">
         <button class="popup-close" onclick="hideDriverInfoPopup()">Zatvori</button>
@@ -207,8 +220,42 @@
                         <p><strong>Ocena:</strong> ${userData.ocena ?? 'N/A'}</p>
                         <p><strong>Vozilo:</strong> ${userData.vozilo ?? 'Nema podataka'}</p>
                         <p><strong>Registracija:</strong> ${userData.registracija ?? 'Nema podataka'}</p>
-                        <p><strong>Slika:</strong> ${userData.slika ? `<img src="${userData.slika}" alt="Slika vozila" />` : 'Nema slike'}</p>
+                        <p><strong>Broj Vožnji:</strong> ${userData.brojVoznji}</p>
+                        <p><strong>Ukupna Zarada:</strong> ${userData.ukupnaZarada} RSD</p>
+                        <p><strong>Ukupan Broj Ocena:</strong> ${userData.ukupanBrojOcena}</p>
                     `;
+
+                    // Prikaz zarade na grafikonu
+                    const zaradaChart = document.getElementById('zaradaChart').getContext('2d');
+                    const zarade = userData.ponude.map(ponuda => ponuda.cena);
+                    const datumi = userData.ponude.map(ponuda => new Date(ponuda.datumIsporuke).toLocaleDateString());
+
+                    new Chart(zaradaChart, {
+                        type: 'line',
+                        data: {
+                            labels: datumi,
+                            datasets: [{
+                                label: 'Zarada po datumu isporuke',
+                                data: zarade,
+                                borderColor: '#007bff',
+                                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                                borderWidth: 2,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + ' RSD';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
                 } else {
                     alert('Failed to fetch user data!');
                 }
@@ -279,7 +326,69 @@
             const popup = document.getElementById('driverInfoPopup');
             popup.style.display = 'none';
         }
+
+        function getUserId() {
+    return sessionStorage.getItem('userId');
+}
+
+async function fetchIstorijaVoznji() {
+    const userId = getUserId();
+    const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/VozacId?vozacId=${userId}`;
+
+    try {
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const rawText = await response.text();
+        console.log('Raw API response:', rawText);
+
+        let voznjeData;
+
+        try {
+            voznjeData = JSON.parse(rawText);
+            console.log('Parsed JSON data:', voznjeData);
+        } catch (error) {
+            console.error('Error parsing JSON:', error);
+            alert('Failed to parse the JSON response.');
+            return;
+        }
+
+        const voznjeList = document.querySelector('.istorija-voznji');
+        voznjeList.innerHTML = ''; // Prazni element pre popunjavanja
+
+        if (Array.isArray(voznjeData) && voznjeData.length > 0) {
+            voznjeData.forEach(voznja => {
+                const voznjaElement = document.createElement('li');
+                voznjaElement.className = 'voznja-item';
+                voznjaElement.innerHTML = `
+                    <p><strong>Naziv Tereta:</strong> ${voznja.naziv_tereta}</p>
+                    <p><strong>Vrsta Tereta:</strong> ${voznja.vrsta_tereta}</p>
+                    <p><strong>Težina Tereta:</strong> ${voznja.tezina_tereta} kg</p>
+                    <p><strong>Dimenzije Tereta:</strong> ${voznja.dimenzije_tereta}</p>
+                    <p><strong>Mesto Polaska:</strong> ${voznja.mesto_polaska}</p>
+                    <p><strong>Mesto Isporuke:</strong> ${voznja.mesto_isporuke}</p>
+                    <p><strong>Datum Polaska:</strong> ${new Date(voznja.datum_polaska).toLocaleDateString()}</p>
+                    <p><strong>Datum Isporuke:</strong> ${new Date(voznja.datum_isporuke).toLocaleDateString()}</p>
+                    <p><strong>Cena:</strong> ${voznja.cena} RSD</p>
+                `;
+                voznjeList.appendChild(voznjaElement);
+            });
+        } else {
+            console.warn('No rides found for this driver.');
+            voznjeList.innerHTML = '<p>Trenutno nema istorije vožnji za ovog vozača.</p>';
+        }
+    } catch (error) {
+        console.error('Error fetching history of rides:', error);
+        alert('Došlo je do greške pri preuzimanju istorije vožnji: ' + error.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', fetchIstorijaVoznji);
+
+
     </script>
 </body>
-
 </html>

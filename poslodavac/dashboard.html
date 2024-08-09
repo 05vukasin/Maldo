@@ -48,7 +48,7 @@
             border-radius: 8px;
             width: 80%;
             max-width: 600px;
-            margin-top: 60px; /* da se ne preklapa sa navigacijom */
+            margin-top: 190px; /* da se ne preklapa sa navigacijom */
             text-align: center;
         }
         .dashboard h2 {
@@ -155,71 +155,45 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
-            const userId = getUserId();
-            console.log('User ID:', userId);
+    const userId = getUserId();
+    console.log('User ID:', userId);
 
-            if (!userId) {
-                alert('User ID not found, redirecting to login.');
-                window.location.href = 'login.html';
-                return;
-            }
+    if (!userId) {
+        alert('User ID not found, redirecting to login.');
+        window.location.href = 'login.html';
+        return;
+    }
 
-            const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Poslodavac/${userId}`;
-            console.log('API URL:', apiUrl);
+    const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Poslodavac/${userId}`;
+    console.log('API URL:', apiUrl);
 
-            try {
-                const response = await fetch(apiUrl);
-                const rawText = await response.text();
-                console.log('Raw response text:', rawText);
+    try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-                let userData;
-                try {
-                    // Prvo parsiramo rawText
-                    let parsedData = JSON.parse(rawText);
-                    console.log('Initial Parsed JSON:', parsedData);
+        const userData = await response.json();
+        console.log('Parsed JSON:', userData);
 
-                    // Ako je parsedData stringovan JSON, ponovo ga parsiramo
-                    if (typeof parsedData === 'string') {
-                        userData = JSON.parse(parsedData);
-                        console.log('Second Parsed JSON:', userData);
-                    } else {
-                        userData = parsedData;
-                    }
-
-                    // Proveravamo da li je userData niz
-                    if (Array.isArray(userData)) {
-                        console.log('userData is an array with length:', userData.length);
-                        console.log('First element:', userData[0]);
-                    } else {
-                        console.error('userData is not an array.');
-                    }
-                } catch (error) {
-                    console.error('Error parsing JSON:', error);
-                    alert('Failed to parse user data!');
-                    return;
-                }
-
-                if (response.ok && Array.isArray(userData) && userData.length > 0) {
-                    const user = userData[0]; // Pristupamo prvom objektu iz niza
-
-                    console.log('User object:', user);
-
-                    const userInfoDiv = document.getElementById('userInfo');
-                    userInfoDiv.innerHTML = `
-                        <p><strong>ID:</strong> ${user.id}</p>
-                        <p><strong>Username:</strong> ${user.username}</p>
-                        <p><strong>Email:</strong> ${user.email}</p>
-                        <p><strong>Naziv:</strong> ${user.naziv}</p>
-                        <p><strong>Telefon:</strong> ${user.telefon}</p>
-                        <p><strong>Ocena:</strong> ${user.ocena ?? 'N/A'}</p>
-                    `;
-                } else {
-                    alert('Failed to fetch user data!');
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        });
+        // Proveravamo da li je userData objekat (nije niz)
+        if (userData && typeof userData === 'object') {
+            const userInfoDiv = document.getElementById('userInfo');
+            userInfoDiv.innerHTML = `
+                <p><strong>ID:</strong> ${userData.id}</p>
+                <p><strong>Username:</strong> ${userData.username}</p>
+                <p><strong>Email:</strong> ${userData.email}</p>
+                <p><strong>Naziv:</strong> ${userData.naziv}</p>
+                <p><strong>Telefon:</strong> ${userData.telefon}</p>
+                <p><strong>Ocena:</strong> ${userData.ocena ?? 'N/A'}</p>
+            `;
+        } else {
+            alert('Failed to fetch user data!');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
         document.addEventListener('DOMContentLoaded', async function() {
     const userId = getUserId();
     if (!userId) {

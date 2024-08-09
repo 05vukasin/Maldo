@@ -22,6 +22,7 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             position: fixed;
             top: 0;
+            z-index: 1000;
         }
         nav ul {
             list-style: none;
@@ -42,7 +43,7 @@
             color: #0056b3;
         }
         .content {
-            margin-top: 60px;
+            margin-top: 80px;
             width: 80%;
             max-width: 800px;
             background-color: #fff;
@@ -53,6 +54,7 @@
         .offer-item {
             padding: 15px;
             border-bottom: 1px solid #ccc;
+            cursor: pointer;
         }
         .offer-item:last-child {
             border-bottom: none;
@@ -64,6 +66,9 @@
         .offer-item p {
             margin: 5px 0;
             font-size: 14px;
+        }
+        .offer-item:hover {
+            background-color: #f9f9f9;
         }
     </style>
 </head>
@@ -84,7 +89,7 @@
 
     <script>
         async function fetchPonude() {
-            const apiUrl = 'https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/PrikaziSve';
+            const apiUrl = 'https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/PrikaziBezVozaca';
     
             try {
                 const response = await fetch(apiUrl);
@@ -103,6 +108,7 @@
                         const ponudaElement = document.createElement('div');
                         ponudaElement.className = 'offer-item';
                         ponudaElement.innerHTML = `
+                            <h3>${ponuda.NazivTereta}</h3>
                             <p><strong>Mesto polaska:</strong> ${ponuda.MestoPolaska}</p>
                             <p><strong>Mesto isporuke:</strong> ${ponuda.MestoIsporuke}</p>
                             <p><strong>Cena:</strong> ${ponuda.Cena} RSD</p>
