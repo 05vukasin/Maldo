@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maldo-Profile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        nav {
+            width: 100%;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            margin: 0;
+        }
+        nav ul li {
+            margin: 0 15px;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 24px;
+        }
+        nav ul li a:hover {
+            color: #0056b3;
+        }
+        .content {
+            margin-top: 60px;
+            width: 80%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .profile-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #ccc;
+        }
+        .profile-item:last-child {
+            border-bottom: none;
+        }
+        .profile-item p {
+            margin: 0;
+            font-size: 18px;
+        }
+        .profile-item i {
+            cursor: pointer;
+            color: #007bff;
+        }
+        .profile-item i:hover {
+            color: #0056b3;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            z-index: 1000;
+        }
+        .popup h3 {
+            margin-top: 0;
+        }
+        .popup input {
+            width: calc(100% - 20px);
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .popup button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .popup button:hover {
+            background-color: #0056b3;
+        }
+        .popup-close {
+            background-color: #ff4d4d;
+            border: none;
+            color: #fff;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            float: right;
+        }
+        .popup-close:hover {
+            background-color: #ff1a1a;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="profile.html"><i class="far fa-user"></i></a></li>
+            <li><a href="dashboard.html"><i class="fas fa-house"></i></a></li>
+            <li><a href="ponude.html"><i class="fas fa-truck-fast"></i></a></li>
+        </ul>
+    </nav>
+    <div class="content" id="userInfo">
+        <!-- Profilni podaci će biti popunjeni ovde -->
+    </div>
+
+    <div class="popup" id="editPopup">
+        <button class="popup-close" id="popupClose">Zatvori</button>
+        <h3>Izmeni Podatak</h3>
+        <input type="text" id="editInput">
+        <button id="saveEdit">Sačuvaj</button>
+    </div>
+
+    <script>
+        function getUserId() {
+            return sessionStorage.getItem('userId');
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const userId = getUserId();
+            console.log('User ID:', userId);
+
+            if (!userId) {
+                alert('User ID not found, redirecting to login.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Vozac/${userId}`;
+            console.log('API URL:', apiUrl);
+
+            try {
+                const response = await fetch(apiUrl);
+                const rawText = await response.text();
+                console.log('Raw response text:', rawText);
+
+                let userData;
+                try {
+                    let parsedData = JSON.parse(rawText);
+                    console.log('Initial Parsed JSON:', parsedData);
+
+                    if (typeof parsedData === 'string') {
+                        userData = JSON.parse(parsedData);
+                        console.log('Second Parsed JSON:', userData);
+                    } else {
+                        userData = parsedData;
+                    }
+
+                    if (Array.isArray(userData)) {
+                        console.log('userData is an array with length:', userData.length);
+                        userData = userData[0];
+                    } else {
+                        console.error('userData is not an array.');
+                    }
+                } catch (error) {
+                    console.error('Error parsing JSON:', error);
+                    alert('Failed to parse user data!');
+                    return;
+                }
+
+                if (response.ok && userData) {
+                    console.log('User object:', userData);
+
+                    const userInfoDiv = document.getElementById('userInfo');
+                    userInfoDiv.innerHTML = `
+                        <p><strong>Username:</strong> ${userData.username} <i class="fas fa-edit" data-field="username"></i></p>
+                        <p><strong>Email:</strong> ${userData.email} <i class="fas fa-edit" data-field="email"></i></p>
+                        <p><strong>Ime:</strong> ${userData.ime} <i class="fas fa-edit" data-field="ime"></i></p>
+                        <p><strong>Vozilo:</strong> ${userData.vozilo ?? 'Nema podataka'} <i class="fas fa-edit" data-field="vozilo"></i></p>
+                        <p><strong>Registracija:</strong> ${userData.registracija ?? 'Nema podataka'} <i class="fas fa-edit" data-field="registracija"></i></p>
+                        <p><strong>Ocena:</strong> ${userData.ocena ?? 'N/A'}</p>
+                        <p><strong>Slika:</strong> ${userData.slika ? `<img src="${userData.slika}" alt="Slika vozila" />` : 'Nema slike'} <i class="fas fa-edit" data-field="slika"></i></p>
+                    `;
+
+                    document.querySelectorAll('.fa-edit').forEach(icon => {
+                        icon.addEventListener('click', () => {
+                            const field = icon.getAttribute('data-field');
+                            const value = userData[field];
+                            showEditPopup(field, value);
+                        });
+                    });
+                } else {
+                    alert('Failed to fetch user data!');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        function showEditPopup(field, value) {
+            document.getElementById('editInput').value = value;
+            document.getElementById('editPopup').dataset.field = field;
+            document.getElementById('editPopup').style.display = 'block';
+        }
+
+        function hideEditPopup() {
+            document.getElementById('editPopup').style.display = 'none';
+        }
+
+        async function saveEdit() {
+            const field = document.getElementById('editPopup').dataset.field;
+            const newValue = document.getElementById('editInput').value;
+            const userId = getUserId();
+
+            const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Vozac/${userId}?${field}=${encodeURIComponent(newValue)}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'PUT',
+                });
+
+                if (response.ok) {
+                    alert('Podatak je uspešno izmenjen.');
+                    hideEditPopup();
+                    location.reload(); // Osvežava celu stranicu
+                } else {
+                    console.error('Failed to update user data. Response status:', response.status);
+                    alert('Došlo je do greške pri izmeni podatka.');
+                }
+            } catch (error) {
+                console.error('Error during save operation:', error);
+                alert('Greška: ' + error.message);
+            }
+        }
+
+        document.getElementById('popupClose').addEventListener('click', hideEditPopup);
+        document.getElementById('saveEdit').addEventListener('click', saveEdit);
+    </script>
+</body>
+</html>

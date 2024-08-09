@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maldo-Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            margin: 0;
+        }
+        nav ul li {
+            margin: 0 15px;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 24px;
+        }
+        nav ul li a:hover {
+            color: #0056b3;
+        }
+        .dashboard {
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            margin-top: 60px; /* da se ne preklapa sa navigacijom */
+            text-align: center;
+        }
+        .dashboard h2 {
+            margin-bottom: 20px;
+        }
+        .dashboard p {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        .ocene {
+    list-style-type: none;
+    padding: 0;
+    margin: 20px 0;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 100%; /* Povećava širinu da odgovara userInfo divu */
+    max-width: 600px; /* Ograničava maksimalnu širinu */
+}
+
+.ocena-item {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+.ocena-item:last-child {
+    border-bottom: none;
+}
+
+.ocena-item p {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+/* Stilovi za popup prozor */
+.popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 400px;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    z-index: 1000;
+}
+
+.popup h3 {
+    margin-top: 0;
+}
+
+.popup p {
+    margin: 10px 0;
+}
+
+.popup button.popup-close {
+    background-color: #ff4d4d;
+    border: none;
+    color: #fff;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    float: right;
+}
+
+.popup button.popup-close:hover {
+    background-color: #ff1a1a;
+}
+
+
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="profile.html"><i class="far fa-user"></i></a></li>
+            <li><a href="dashboard.html"><i class="fas fa-house"></i></a></li>
+            <li><a href="ponude.html"><i class="fas fa-truck-fast"></i></a></li>
+        </ul>
+    </nav>
+    <section class="dashboard">
+        <h2>Welcome to Your Dashboard</h2>
+        <div id="userInfo">
+            <!-- Podaci će biti popunjeni ovde -->
+        </div>
+    </section>
+
+    <ul class="ocene"></ul>
+    <div id="driverInfoPopup" class="popup">
+        <button class="popup-close" onclick="hideDriverInfoPopup()">Zatvori</button>
+        <div id="driverInfoContent">
+            <!-- Ovde će biti popunjene informacije o vozaču -->
+        </div>
+    </div>
+    <script>
+        function getUserId() {
+            return sessionStorage.getItem('userId');
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const userId = getUserId();
+            console.log('User ID:', userId);
+
+            if (!userId) {
+                alert('User ID not found, redirecting to login.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Vozac/${userId}`;
+            console.log('API URL:', apiUrl);
+
+            try {
+                const response = await fetch(apiUrl);
+                const rawText = await response.text();
+                console.log('Raw response text:', rawText);
+
+                let userData;
+                try {
+                    let parsedData = JSON.parse(rawText);
+                    console.log('Initial Parsed JSON:', parsedData);
+
+                    if (typeof parsedData === 'string') {
+                        userData = JSON.parse(parsedData);
+                        console.log('Second Parsed JSON:', userData);
+                    } else {
+                        userData = parsedData;
+                    }
+
+                    if (Array.isArray(userData)) {
+                        console.log('userData is an array with length:', userData.length);
+                        userData = userData[0];
+                    } else {
+                        console.error('userData is not an array.');
+                    }
+                } catch (error) {
+                    console.error('Error parsing JSON:', error);
+                    alert('Failed to parse user data!');
+                    return;
+                }
+
+                if (response.ok && userData) {
+                    console.log('User object:', userData);
+
+                    const userInfoDiv = document.getElementById('userInfo');
+                    userInfoDiv.innerHTML = `
+                        <p><strong>ID:</strong> ${userData.id}</p>
+                        <p><strong>Username:</strong> ${userData.username}</p>
+                        <p><strong>Email:</strong> ${userData.email}</p>
+                        <p><strong>Ime:</strong> ${userData.ime}</p>
+                        <p><strong>Ocena:</strong> ${userData.ocena ?? 'N/A'}</p>
+                        <p><strong>Vozilo:</strong> ${userData.vozilo ?? 'Nema podataka'}</p>
+                        <p><strong>Registracija:</strong> ${userData.registracija ?? 'Nema podataka'}</p>
+                        <p><strong>Slika:</strong> ${userData.slika ? `<img src="${userData.slika}" alt="Slika vozila" />` : 'Nema slike'}</p>
+                    `;
+                } else {
+                    alert('Failed to fetch user data!');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const userId = getUserId();
+            if (!userId) {
+                alert('User ID not found.');
+                return;
+            }
+    
+            const oceneUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/OcenaVozaca/Vozac/${userId}`;
+
+            try {
+                const response = await fetch(oceneUrl);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const oceneData = await response.json();
+
+                const oceneDiv = document.querySelector('.ocene');
+                oceneDiv.innerHTML = ''; // Prazni element pre popunjavanja
+
+                if (Array.isArray(oceneData) && oceneData.length > 0) {
+                    oceneData.forEach(ocena => {
+                        const ocenaElement = document.createElement('li');
+                        ocenaElement.className = 'ocena-item';
+                        ocenaElement.innerHTML = `
+                            <p>⭐ ${ocena.ocena}</p>
+                            <p>${ocena.komentar}</p>
+                        `;
+                        ocenaElement.addEventListener('click', () => {
+                            showDriverInfoPopup(ocena.poslodavac);
+                        });
+                        oceneDiv.appendChild(ocenaElement);
+                    });
+                } else {
+                    console.warn('No ratings found for this driver.');
+                    oceneDiv.innerHTML = '<p>Trenutno nema ocena za ovog vozača.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching ratings:', error);
+                alert('Došlo je do greške pri preuzimanju ocena: ' + error.message);
+            }
+        });
+
+        function showDriverInfoPopup(poslodavac) {
+            const popup = document.getElementById('driverInfoPopup');
+            const popupContent = document.getElementById('driverInfoContent');
+
+            popupContent.innerHTML = `
+                <p><strong>Naziv Poslodavca:</strong> ${poslodavac.naziv}</p>
+                <p><strong>Username:</strong> ${poslodavac.username}</p>
+                <p><strong>Email:</strong> ${poslodavac.email}</p>
+                <p><strong>Ocena:</strong> ${poslodavac.ocena}</p>
+            `;
+
+            popup.style.display = 'block';
+        }
+
+        function hideDriverInfoPopup() {
+            const popup = document.getElementById('driverInfoPopup');
+            popup.style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

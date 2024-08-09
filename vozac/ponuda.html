@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ponuda Detalji</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        nav {
+            width: 100%;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            z-index: 1000;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            margin: 0;
+        }
+        nav ul li {
+            margin: 0 15px;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 24px;
+        }
+        nav ul li a:hover {
+            color: #0056b3;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            margin-top: 80px; /* Dodata margina za izbegavanje preklapanja sa navigacijom */
+            flex-grow: 1;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        p {
+            margin: 10px 0;
+            color: #555;
+        }
+        .map-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        iframe {
+            width: 100%;
+            height: 300px;
+            border: none;
+            border-radius: 8px;
+        }
+        .accept-button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .accept-button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="profile.html"><i class="far fa-user"></i></a></li>
+            <li><a href="dashboard.html"><i class="fas fa-house"></i></a></li>
+            <li><a href="ponude.html"><i class="fas fa-truck-fast"></i></a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <h2>Detalji Ponude</h2>
+        <div id="ponudaDetails">
+            <!-- Podaci o ponudi će biti prikazani ovde -->
+        </div>
+        <div class="map-container" id="mapContainer">
+            <!-- Mapa će biti prikazana ovde -->
+        </div>
+        <div id="poslodavacDetails">
+            <!-- Podaci o poslodavcu će biti prikazani ovde -->
+        </div>
+        <button class="accept-button" id="acceptButton">PRIHVATI</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const ponudaId = sessionStorage.getItem('selectedPonudaId');
+            const vozacId = sessionStorage.getItem('userId'); // Preuzimanje ID vozača iz session-a
+
+            if (!ponudaId) {
+                alert('Ponuda ID nije pronađen.');
+                return;
+            }
+
+            const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/${ponudaId}`;
+
+            try {
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const ponuda = await response.json();
+
+                const ponudaDetailsDiv = document.getElementById('ponudaDetails');
+                ponudaDetailsDiv.innerHTML = `
+                    <p><strong>Mesto Polaska:</strong> ${ponuda.mesto_polaska}</p>
+                    <p><strong>Mesto Isporuke:</strong> ${ponuda.mesto_isporuke}</p>
+                    <p><strong>Težina:</strong> ${ponuda.tezina_tereta} kg</p>
+                    <p><strong>Cena:</strong> ${ponuda.cena} RSD</p>
+                `;
+
+                // Prikaz mape
+                const mapContainer = document.getElementById('mapContainer');
+                mapContainer.innerHTML = ponuda.mapa;
+
+                // Prikaz podataka o poslodavcu
+                const poslodavacDetailsDiv = document.getElementById('poslodavacDetails');
+                poslodavacDetailsDiv.innerHTML = `
+                    <h3>Podaci o Poslodavcu</h3>
+                    <p><strong>Naziv Poslodavca:</strong> ${ponuda.poslodavac.naziv}</p>
+                    <p><strong>Username:</strong> ${ponuda.poslodavac.username}</p>
+                    <p><strong>Email:</strong> ${ponuda.poslodavac.email}</p>
+                    <p><strong>Telefon:</strong> ${ponuda.poslodavac.telefon}</p>
+                    <p><strong>Ocena:</strong> ${ponuda.poslodavac.ocena ?? 'N/A'}</p>
+                `;
+
+                // Dodavanje event listenera na dugme PRIAVTI
+                document.getElementById('acceptButton').addEventListener('click', async () => {
+                    const acceptApiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/VozacId?ponudaId=${ponudaId}&vozacId=${vozacId}`;
+                    
+                    try {
+                        const acceptResponse = await fetch(acceptApiUrl, {
+                            method: 'PUT'
+                        });
+
+                        if (acceptResponse.ok) {
+                            alert('Ponuda uspešno prihvaćena.');
+                            window.location.href = 'dashboard.html'; // Preusmeravanje na dashboard nakon prihvatanja
+                        } else {
+                            alert('Došlo je do greške pri prihvatanju ponude.');
+                        }
+                    } catch (error) {
+                        console.error('Error accepting offer:', error);
+                        alert('Došlo je do greške pri prihvatanju ponude: ' + error.message);
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching offer details:', error);
+                alert('Došlo je do greške pri preuzimanju detalja ponude: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

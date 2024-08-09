@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maldo-Ponude</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        nav {
+            width: 100%;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            margin: 0;
+        }
+        nav ul li {
+            margin: 0 15px;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 24px;
+        }
+        nav ul li a:hover {
+            color: #0056b3;
+        }
+        .content {
+            margin-top: 60px;
+            width: 80%;
+            max-width: 800px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .offer-item {
+            padding: 15px;
+            border-bottom: 1px solid #ccc;
+        }
+        .offer-item:last-child {
+            border-bottom: none;
+        }
+        .offer-item h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .offer-item p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="profile.html"><i class="far fa-user"></i></a></li>
+            <li><a href="dashboard.html"><i class="fas fa-house"></i></a></li>
+            <li><a href="ponude.html"><i class="fas fa-truck-fast"></i></a></li>
+        </ul>
+    </nav>
+    <div class="content">
+        <h2>Ponude</h2>
+        <div id="ponudeList">
+            <!-- Ponude će biti popunjene ovde -->
+        </div>
+    </div>
+
+    <script>
+        async function fetchPonude() {
+            const apiUrl = 'https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/PrikaziSve';
+    
+            try {
+                const response = await fetch(apiUrl);
+    
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+    
+                const ponudeData = await response.json();
+    
+                const ponudeList = document.getElementById('ponudeList');
+                ponudeList.innerHTML = ''; // Prazni element pre popunjavanja
+    
+                if (Array.isArray(ponudeData) && ponudeData.length > 0) {
+                    ponudeData.forEach(ponuda => {
+                        const ponudaElement = document.createElement('div');
+                        ponudaElement.className = 'offer-item';
+                        ponudaElement.innerHTML = `
+                            <p><strong>Mesto polaska:</strong> ${ponuda.MestoPolaska}</p>
+                            <p><strong>Mesto isporuke:</strong> ${ponuda.MestoIsporuke}</p>
+                            <p><strong>Cena:</strong> ${ponuda.Cena} RSD</p>
+                            <p><strong>Težina:</strong> ${ponuda.TezinaTereta} kg</p>
+                        `;
+    
+                        // Dodaj event listener za klik na ponudu
+                        ponudaElement.addEventListener('click', () => {
+                            sessionStorage.setItem('selectedPonudaId', ponuda.Id);
+                            window.location.href = 'ponuda.html'; // Prebacuje korisnika na ponuda.html
+                        });
+    
+                        ponudeList.appendChild(ponudaElement);
+                    });
+                } else {
+                    ponudeList.innerHTML = '<p>Trenutno nema dostupnih ponuda.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching offers:', error);
+                alert('Došlo je do greške pri preuzimanju ponuda: ' + error.message);
+            }
+        }
+    
+        document.addEventListener('DOMContentLoaded', fetchPonude);
+    </script>
+</body>
+</html>
