@@ -9,14 +9,15 @@
     <style>
         body {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
-            margin-bottom: 50px;
+    flex-direction: column;
+    justify-content: flex-start; /* Promenite sa center na flex-start */
+    align-items: center;
+    min-height: 100vh; /* Umesto height: 100vh */
+    margin: 0;
+    padding: 0; /* Dodajte padding ako je potrebno */
+    background-color: #f0f0f0;
+    font-family: Arial, sans-serif;
+    overflow: auto; /* Dodajte overflow */
         }
         nav {
             position: fixed;
@@ -50,7 +51,7 @@
             border-radius: 8px;
             width: 80%;
             max-width: 600px;
-            margin-top: 190px; /* da se ne preklapa sa navigacijom */
+            margin-top: 60px; /* da se ne preklapa sa navigacijom */
             text-align: center;
         }
         .dashboard h2 {
@@ -121,21 +122,79 @@
             background-color: #ff1a1a;
         }
         .istorija-voznji {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-        .voznja-item {
-            padding: 15px;
-            border-bottom: 1px solid #ccc;
-        }
-        .voznja-item:last-child {
-            border-bottom: none;
-        }
-        .voznja-item p {
-            margin: 5px 0;
-            font-size: 14px;
-        }
+    list-style-type: none;
+    padding: 0;
+    margin: 20px 0;
+    width: 100%;
+    max-width: 600px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.voznja-item {
+    padding: 15px;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.voznja-item:last-child {
+    border-bottom: none;
+}
+
+.voznja-item p {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.voznja-item:hover {
+    background-color: #f0f0f0;
+    cursor: pointer;
+}
+
+.voznja-item strong {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.voznja-item .cena {
+    font-size: 18px;
+    font-weight: bold;
+    color: #28a745;
+}
+        .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 400px;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    z-index: 1000;
+}
+
+.popup-close {
+    background-color: #ff4d4d;
+    border: none;
+    color: #fff;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    float: right;
+}
+
+.popup-close:hover {
+    background-color: #ff1a1a;
+}
+
     </style>
 </head>
 <body>
@@ -154,6 +213,12 @@
         <canvas id="zaradaChart" class="zarada-chart"></canvas> <!-- Mesto za grafikon zarade -->
     </section>
     <ul class="istorija-voznji"></ul>
+    <div id="ponudaPopup" class="popup">
+        <button class="popup-close" onclick="hidePonudaPopup()">Zatvori</button>
+        <div id="ponudaContent">
+            <!-- Ovde će biti prikazani detalji ponude -->
+        </div>
+    </div>
     <ul class="ocene"></ul>
     <div id="driverInfoPopup" class="popup">
         <button class="popup-close" onclick="hideDriverInfoPopup()">Zatvori</button>
@@ -165,52 +230,26 @@
         function getUserId() {
             return sessionStorage.getItem('userId');
         }
-
+    
         document.addEventListener('DOMContentLoaded', async function() {
             const userId = getUserId();
             console.log('User ID:', userId);
-
+    
             if (!userId) {
                 alert('User ID not found, redirecting to login.');
                 window.location.href = 'login.html';
                 return;
             }
-
+    
             const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Vozac/${userId}`;
             console.log('API URL:', apiUrl);
-
+    
             try {
                 const response = await fetch(apiUrl);
-                const rawText = await response.text();
-                console.log('Raw response text:', rawText);
-
-                let userData;
-                try {
-                    let parsedData = JSON.parse(rawText);
-                    console.log('Initial Parsed JSON:', parsedData);
-
-                    if (typeof parsedData === 'string') {
-                        userData = JSON.parse(parsedData);
-                        console.log('Second Parsed JSON:', userData);
-                    } else {
-                        userData = parsedData;
-                    }
-
-                    if (Array.isArray(userData)) {
-                        console.log('userData is an array with length:', userData.length);
-                        userData = userData[0];
-                    } else {
-                        console.error('userData is not an array.');
-                    }
-                } catch (error) {
-                    console.error('Error parsing JSON:', error);
-                    alert('Failed to parse user data!');
-                    return;
-                }
-
+                const userData = await response.json();
+                console.log('User Data:', userData);
+    
                 if (response.ok && userData) {
-                    console.log('User object:', userData);
-
                     const userInfoDiv = document.getElementById('userInfo');
                     userInfoDiv.innerHTML = `
                         <p><strong>ID:</strong> ${userData.id}</p>
@@ -224,12 +263,15 @@
                         <p><strong>Ukupna Zarada:</strong> ${userData.ukupnaZarada} RSD</p>
                         <p><strong>Ukupan Broj Ocena:</strong> ${userData.ukupanBrojOcena}</p>
                     `;
-
+    
                     // Prikaz zarade na grafikonu
                     const zaradaChart = document.getElementById('zaradaChart').getContext('2d');
-                    const zarade = userData.ponude.map(ponuda => ponuda.cena);
-                    const datumi = userData.ponude.map(ponuda => new Date(ponuda.datumIsporuke).toLocaleDateString());
-
+                    const zarade = userData.ponude.map(ponuda => ponuda.Cena);
+                    const datumi = userData.ponude.map(ponuda => {
+                        const datum = new Date(ponuda.DatumIsporuke);
+                        return datum.toLocaleDateString();
+                    });
+    
                     new Chart(zaradaChart, {
                         type: 'line',
                         data: {
@@ -263,7 +305,7 @@
                 alert('Error: ' + error.message);
             }
         });
-
+    
         document.addEventListener('DOMContentLoaded', async function() {
             const userId = getUserId();
             if (!userId) {
@@ -272,19 +314,19 @@
             }
     
             const oceneUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/OcenaVozaca/Vozac/${userId}`;
-
+    
             try {
                 const response = await fetch(oceneUrl);
-
+    
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-
+    
                 const oceneData = await response.json();
-
+    
                 const oceneDiv = document.querySelector('.ocene');
                 oceneDiv.innerHTML = ''; // Prazni element pre popunjavanja
-
+    
                 if (Array.isArray(oceneData) && oceneData.length > 0) {
                     oceneData.forEach(ocena => {
                         const ocenaElement = document.createElement('li');
@@ -307,71 +349,72 @@
                 alert('Došlo je do greške pri preuzimanju ocena: ' + error.message);
             }
         });
-
+    
         function showDriverInfoPopup(poslodavac) {
             const popup = document.getElementById('driverInfoPopup');
             const popupContent = document.getElementById('driverInfoContent');
-
+    
             popupContent.innerHTML = `
                 <p><strong>Naziv Poslodavca:</strong> ${poslodavac.naziv}</p>
                 <p><strong>Username:</strong> ${poslodavac.username}</p>
                 <p><strong>Email:</strong> ${poslodavac.email}</p>
                 <p><strong>Ocena:</strong> ${poslodavac.ocena}</p>
             `;
-
+    
             popup.style.display = 'block';
         }
-
+    
         function hideDriverInfoPopup() {
             const popup = document.getElementById('driverInfoPopup');
             popup.style.display = 'none';
         }
-
-        function getUserId() {
-    return sessionStorage.getItem('userId');
-}
-
-async function fetchIstorijaVoznji() {
+    
+        async function fetchIstorijaVoznji() {
     const userId = getUserId();
+    console.log('Vozac ID:', userId);
+
     const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/VozacId?vozacId=${userId}`;
+    console.log('API URL:', apiUrl);
 
     try {
         const response = await fetch(apiUrl);
+        console.log('API Response:', response);
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const rawText = await response.text();
-        console.log('Raw API response:', rawText);
+        let rawText = await response.text();
+        console.log('Raw Text Response:', rawText);
 
         let voznjeData;
-
         try {
-            voznjeData = JSON.parse(rawText);
-            console.log('Parsed JSON data:', voznjeData);
+            // Dodatno parsiranje ako je potrebno
+            if (typeof rawText === 'string') {
+                voznjeData = JSON.parse(rawText);
+            }
+            
+            if (typeof voznjeData === 'string') {
+                voznjeData = JSON.parse(voznjeData);
+            }
+            
+            console.log('Parsed JSON Data:', voznjeData);
+            console.log('Type of voznjeData:', typeof voznjeData);
         } catch (error) {
             console.error('Error parsing JSON:', error);
-            alert('Failed to parse the JSON response.');
+            alert('Došlo je do greške pri parsiranju podataka!');
             return;
         }
 
         const voznjeList = document.querySelector('.istorija-voznji');
         voznjeList.innerHTML = ''; // Prazni element pre popunjavanja
 
-        if (Array.isArray(voznjeData) && voznjeData.length > 0) {
+        if (Array.isArray(voznjeData)) {
             voznjeData.forEach(voznja => {
+                const datumPolaska = new Date(voznja.datum_polaska);
+                const datumIsporuke = new Date(voznja.datum_isporuke);
+
                 const voznjaElement = document.createElement('li');
                 voznjaElement.className = 'voznja-item';
                 voznjaElement.innerHTML = `
                     <p><strong>Naziv Tereta:</strong> ${voznja.naziv_tereta}</p>
-                    <p><strong>Vrsta Tereta:</strong> ${voznja.vrsta_tereta}</p>
-                    <p><strong>Težina Tereta:</strong> ${voznja.tezina_tereta} kg</p>
-                    <p><strong>Dimenzije Tereta:</strong> ${voznja.dimenzije_tereta}</p>
-                    <p><strong>Mesto Polaska:</strong> ${voznja.mesto_polaska}</p>
-                    <p><strong>Mesto Isporuke:</strong> ${voznja.mesto_isporuke}</p>
-                    <p><strong>Datum Polaska:</strong> ${new Date(voznja.datum_polaska).toLocaleDateString()}</p>
-                    <p><strong>Datum Isporuke:</strong> ${new Date(voznja.datum_isporuke).toLocaleDateString()}</p>
+                    
                     <p><strong>Cena:</strong> ${voznja.cena} RSD</p>
                 `;
                 voznjeList.appendChild(voznjaElement);
@@ -386,9 +429,32 @@ async function fetchIstorijaVoznji() {
     }
 }
 
+function showPonudaDetails(voznja) {
+    const ponudaContent = document.getElementById('ponudaContent');
+    ponudaContent.innerHTML = `
+        <p><strong>Naziv Tereta:</strong> ${voznja.naziv_tereta}</p>
+        <p><strong>Vrsta Tereta:</strong> ${voznja.vrsta_tereta}</p>
+        <p><strong>Težina Tereta:</strong> ${voznja.tezina_tereta} kg</p>
+        <p><strong>Dimenzije Tereta:</strong> ${voznja.dimenzije_tereta}</p>
+        <p><strong>Mesto Polaska:</strong> ${voznja.mesto_polaska}</p>
+        <p><strong>Mesto Isporuke:</strong> ${voznja.mesto_isporuke}</p>
+        <p><strong>Datum Polaska:</strong> ${new Date(voznja.datum_polaska).toLocaleDateString()}</p>
+        <p><strong>Datum Isporuke:</strong> ${new Date(voznja.datum_isporuke).toLocaleDateString()}</p>
+        <p><strong>Cena:</strong> ${voznja.cena} RSD</p>
+        <p><strong>Dodatni Opis:</strong> ${voznja.dodatan_opis}</p>
+    `;
+    document.getElementById('ponudaPopup').style.display = 'block';
+}
+
+function hidePonudaPopup() {
+    document.getElementById('ponudaPopup').style.display = 'none';
+}
+
 document.addEventListener('DOMContentLoaded', fetchIstorijaVoznji);
 
 
     </script>
+    
+    
 </body>
 </html>
