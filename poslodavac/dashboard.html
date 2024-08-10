@@ -85,6 +85,44 @@
     font-size: 16px;
     color: #333;
 }
+
+.zahtevi {
+            list-style-type: none;
+            padding: 0;
+            margin: 20px 0;
+            width: 100%;
+            max-width: 800px;
+        }
+        .zahtev-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .zahtev-item h4 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .zahtev-item p {
+            margin: 5px 0;
+            color: #555;
+        }
+        .btn-accept {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-accept:hover {
+            background-color: #0056b3;
+        }
 /* Stilovi za popup prozor */
 .popup {
     display: none;
@@ -123,6 +161,51 @@
     background-color: #ff1a1a;
 }
 
+.popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            z-index: 1000;
+        }
+        .popup h3 {
+            margin-top: 0;
+        }
+        .popup p {
+            margin: 10px 0;
+            color: #555;
+        }
+        .popup button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            font-size: 18px;
+        }
+        .popup button:hover {
+            background-color: #0056b3;
+        }
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
 
     </style>
 </head>
@@ -141,7 +224,19 @@
         </div>
         
     </section>
+    <ul class="zahtevi">
+        <!-- Zahtevi će biti popunjeni ovde -->
+    </ul>
 
+    <div class="popup-overlay" id="popupOverlay"></div>
+    <div class="popup" id="zahtevPopup">
+        <button id="closePopup">Zatvori</button>
+        <h3>Detalji Zahteva</h3>
+        <div id="zahtevDetails">
+            <!-- Detalji zahteva će biti prikazani ovde -->
+        </div>
+        <button id="acceptRequest">Prihvati</button>
+    </div>
     <ul class="ocene"></ul>
     <div id="driverInfoPopup" class="popup">
         <button class="popup-close" onclick="hideDriverInfoPopup()">Zatvori</button>
@@ -257,6 +352,103 @@ function hideDriverInfoPopup() {
 const popup = document.getElementById('driverInfoPopup');
 popup.style.display = 'none';
 }
+
+let zahteviData = [];
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const userId = sessionStorage.getItem('userId');
+            const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Zahtevi/Poslodavac/${userId}`;
+            
+            try {
+                const response = await fetch(apiUrl);
+                zahteviData = await response.json();
+
+                if (response.ok && Array.isArray(zahteviData) && zahteviData.length > 0) {
+                    const zahteviList = document.querySelector('.zahtevi');
+                    zahteviList.innerHTML = ''; // Očistite listu pre popunjavanja
+
+                    zahteviData.forEach(zahtev => {
+                        const zahtevItem = document.createElement('li');
+                        zahtevItem.className = 'zahtev-item';
+                        zahtevItem.innerHTML = `
+                            <div>
+                                <h4>Ponuda: ${zahtev.NazivTereta}</h4>
+                                <p>Vozač: ${zahtev.VozacIme} (${zahtev.VozacOcena}⭐)</p>
+                            </div>
+                            <button class="btn-accept" onclick="prikaziDetalje(${zahtev.ZahtevId})">Prihvati</button>
+                        `;
+                        zahteviList.appendChild(zahtevItem);
+                    });
+                } else {
+                    document.querySelector('.zahtevi').innerHTML = '<p>Trenutno nema zahteva.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching requests:', error);
+                alert('Došlo je do greške pri preuzimanju zahteva: ' + error.message);
+            }
+        });
+
+        function prikaziDetalje(zahtevId) {
+            const zahtev = zahteviData.find(z => z.ZahtevId === zahtevId);
+
+            const zahtevDetails = document.getElementById('zahtevDetails');
+            zahtevDetails.innerHTML = `
+                <p><strong>Ponuda:</strong> ${zahtev.NazivTereta}</p>
+                <p><strong>Vrsta Tereta:</strong> ${zahtev.VrstaTereta}</p>
+                <p><strong>Težina:</strong> ${zahtev.TezinaTereta} kg</p>
+                <p><strong>Dimenzije:</strong> ${zahtev.DimenzijeTereta}</p>
+                <p><strong>Mesto Polaska:</strong> ${zahtev.MestoPolaska}</p>
+                <p><strong>Mesto Isporuke:</strong> ${zahtev.MestoIsporuke}</p>
+                <p><strong>Datum Polaska:</strong> ${new Date(zahtev.DatumPolaska).toLocaleDateString()}</p>
+                <p><strong>Datum Isporuke:</strong> ${new Date(zahtev.DatumIsporuke).toLocaleDateString()}</p>
+                <p><strong>Dodatan Opis:</strong> ${zahtev.DodatanOpis}</p>
+                <p><strong>Cena:</strong> ${zahtev.Cena} RSD</p>
+                <hr>
+                <p><strong>Vozač:</strong> ${zahtev.VozacIme}</p>
+                <p><strong>Username:</strong> ${zahtev.VozacUsername}</p>
+                <p><strong>Email:</strong> ${zahtev.VozacEmail}</p>
+                <p><strong>Vozilo:</strong> ${zahtev.VozacVozilo}</p>
+                <p><strong>Registracija:</strong> ${zahtev.VozacRegistracija}</p>
+                <p><strong>Ocena:</strong> ${zahtev.VozacOcena}⭐</p>
+            `;
+
+            // Dodaj event listener za dugme "Prihvati"
+            document.getElementById('acceptRequest').onclick = function() {
+                prihvatiZahtev(zahtev.PonudaId, zahtev.VozacId);
+            };
+
+            // Prikaz popupa
+            document.getElementById('popupOverlay').style.display = 'block';
+            document.getElementById('zahtevPopup').style.display = 'block';
+        }
+
+        async function prihvatiZahtev(ponudaId, vozacId) {
+            const acceptApiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/VozacId?ponudaId=${ponudaId}&vozacId=${vozacId}`;
+            
+            try {
+                const response = await fetch(acceptApiUrl, {
+                    method: 'PUT'
+                });
+
+                if (response.ok) {
+                    alert('Vozač je uspešno ažuriran u ponudi.');
+                    // Zatvori popup nakon uspešnog prihvatanja
+                    document.getElementById('popupOverlay').style.display = 'none';
+                    document.getElementById('zahtevPopup').style.display = 'none';
+                    fetchOfferHistory(); // Osvežavanje istorije ponuda
+                } else {
+                    alert('Došlo je do greške pri prihvatanju zahteva.');
+                }
+            } catch (error) {
+                console.error('Error accepting request:', error);
+                alert('Došlo je do greške pri prihvatanju zahteva: ' + error.message);
+            }
+        }
+
+        document.getElementById('closePopup').addEventListener('click', function() {
+            document.getElementById('popupOverlay').style.display = 'none';
+            document.getElementById('zahtevPopup').style.display = 'none';
+        });
     </script>
 </body>
 </html>

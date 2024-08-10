@@ -105,78 +105,81 @@
         <div id="poslodavacDetails">
             <!-- Podaci o poslodavcu će biti prikazani ovde -->
         </div>
-        <button class="accept-button" id="acceptButton">PRIHVATI</button>
+        <button class="accept-button" id="acceptButton">POSALJI ZAHTEV</button>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
-            const ponudaId = sessionStorage.getItem('selectedPonudaId');
-            const vozacId = sessionStorage.getItem('userId'); // Preuzimanje ID vozača iz session-a
+    const ponudaId = sessionStorage.getItem('selectedPonudaId');
+    const vozacId = sessionStorage.getItem('userId'); // Preuzimanje ID vozača iz session-a
 
-            if (!ponudaId) {
-                alert('Ponuda ID nije pronađen.');
-                return;
-            }
+    if (!ponudaId) {
+        alert('Ponuda ID nije pronađen.');
+        return;
+    }
 
-            const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/${ponudaId}`;
+    const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/${ponudaId}`;
 
+    try {
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const ponuda = await response.json();
+
+        const ponudaDetailsDiv = document.getElementById('ponudaDetails');
+        ponudaDetailsDiv.innerHTML = `
+            <p><strong>Mesto Polaska:</strong> ${ponuda.mesto_polaska}</p>
+            <p><strong>Mesto Isporuke:</strong> ${ponuda.mesto_isporuke}</p>
+            <p><strong>Težina:</strong> ${ponuda.tezina_tereta} kg</p>
+            <p><strong>Cena:</strong> ${ponuda.cena} RSD</p>
+        `;
+
+        // Prikaz mape
+        const mapContainer = document.getElementById('mapContainer');
+        mapContainer.innerHTML = ponuda.mapa;
+
+        // Prikaz podataka o poslodavcu
+        const poslodavacDetailsDiv = document.getElementById('poslodavacDetails');
+        poslodavacDetailsDiv.innerHTML = `
+            <h3>Podaci o Poslodavcu</h3>
+            <p><strong>Naziv Poslodavca:</strong> ${ponuda.poslodavac.naziv}</p>
+            <p><strong>Username:</strong> ${ponuda.poslodavac.username}</p>
+            <p><strong>Email:</strong> ${ponuda.poslodavac.email}</p>
+            <p><strong>Telefon:</strong> ${ponuda.poslodavac.telefon}</p>
+            <p><strong>Ocena:</strong> ${ponuda.poslodavac.ocena ?? 'N/A'}</p>
+        `;
+
+        // Dodavanje event listenera na dugme PRIHVATI
+        document.getElementById('acceptButton').addEventListener('click', async () => {
+            const acceptApiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Zahtevi/Dodaj?vozacId=${vozacId}&poslodavacId=${ponuda.poslodavac.id}&ponudaId=${ponudaId}`;
+            
             try {
-                const response = await fetch(apiUrl);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const ponuda = await response.json();
-
-                const ponudaDetailsDiv = document.getElementById('ponudaDetails');
-                ponudaDetailsDiv.innerHTML = `
-                    <p><strong>Mesto Polaska:</strong> ${ponuda.mesto_polaska}</p>
-                    <p><strong>Mesto Isporuke:</strong> ${ponuda.mesto_isporuke}</p>
-                    <p><strong>Težina:</strong> ${ponuda.tezina_tereta} kg</p>
-                    <p><strong>Cena:</strong> ${ponuda.cena} RSD</p>
-                `;
-
-                // Prikaz mape
-                const mapContainer = document.getElementById('mapContainer');
-                mapContainer.innerHTML = ponuda.mapa;
-
-                // Prikaz podataka o poslodavcu
-                const poslodavacDetailsDiv = document.getElementById('poslodavacDetails');
-                poslodavacDetailsDiv.innerHTML = `
-                    <h3>Podaci o Poslodavcu</h3>
-                    <p><strong>Naziv Poslodavca:</strong> ${ponuda.poslodavac.naziv}</p>
-                    <p><strong>Username:</strong> ${ponuda.poslodavac.username}</p>
-                    <p><strong>Email:</strong> ${ponuda.poslodavac.email}</p>
-                    <p><strong>Telefon:</strong> ${ponuda.poslodavac.telefon}</p>
-                    <p><strong>Ocena:</strong> ${ponuda.poslodavac.ocena ?? 'N/A'}</p>
-                `;
-
-                // Dodavanje event listenera na dugme PRIAVTI
-                document.getElementById('acceptButton').addEventListener('click', async () => {
-                    const acceptApiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/VozacId?ponudaId=${ponudaId}&vozacId=${vozacId}`;
-                    
-                    try {
-                        const acceptResponse = await fetch(acceptApiUrl, {
-                            method: 'PUT'
-                        });
-
-                        if (acceptResponse.ok) {
-                            alert('Ponuda uspešno prihvaćena.');
-                            window.location.href = 'dashboard.html'; // Preusmeravanje na dashboard nakon prihvatanja
-                        } else {
-                            alert('Došlo je do greške pri prihvatanju ponude.');
-                        }
-                    } catch (error) {
-                        console.error('Error accepting offer:', error);
-                        alert('Došlo je do greške pri prihvatanju ponude: ' + error.message);
+                const acceptResponse = await fetch(acceptApiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
                 });
+
+                if (acceptResponse.ok) {
+                    alert('Zahtev je uspešno poslat.');
+                    window.location.href = 'dashboard.html'; // Preusmeravanje na dashboard nakon prihvatanja
+                } else {
+                    alert('Došlo je do greške pri slanju zahteva.');
+                }
             } catch (error) {
-                console.error('Error fetching offer details:', error);
-                alert('Došlo je do greške pri preuzimanju detalja ponude: ' + error.message);
+                console.error('Error sending request:', error);
+                alert('Došlo je do greške pri slanju zahteva: ' + error.message);
             }
         });
+    } catch (error) {
+        console.error('Error fetching offer details:', error);
+        alert('Došlo je do greške pri preuzimanju detalja ponude: ' + error.message);
+    }
+});
     </script>
 </body>
 </html>
