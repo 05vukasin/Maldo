@@ -8,14 +8,15 @@
     <style>
         body {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
-            overflow: auto;
+    flex-direction: column;
+    justify-content: flex-start; /* Promenite sa center na flex-start */
+    align-items: center;
+    min-height: 100vh; /* Umesto height: 100vh */
+    margin: 0;
+    padding: 0; /* Dodajte padding ako je potrebno */
+    background-color: #f0f0f0;
+    font-family: Arial, sans-serif;
+    overflow: auto; /* Dodajte overflow */
         }
         nav {
             position: fixed;
