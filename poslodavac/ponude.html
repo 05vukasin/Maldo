@@ -198,47 +198,7 @@
         <button class="popup-close" id="popupClose">Zatvori</button>
         <h3>Dodaj Novu Ponudu</h3>
         <form id="offerForm">
-            <div class="form-group">
-                <label for="naziv_tereta">Naziv Tereta:</label>
-                <input type="text" id="naziv_tereta" name="naziv_tereta" required>
-            </div>
-            <div class="form-group">
-                <label for="vrsta_tereta">Vrsta Tereta:</label>
-                <input type="text" id="vrsta_tereta" name="vrsta_tereta" required>
-            </div>
-            <div class="form-group">
-                <label for="tezina_tereta">Težina Tereta (kg):</label>
-                <input type="text" id="tezina_tereta" name="tezina_tereta" required>
-            </div>
-            <div class="form-group">
-                <label for="dimenzije_tereta">Dimenzije Tereta (npr. 1.2m x 1m x 0.8m):</label>
-                <input type="text" id="dimenzije_tereta" name="dimenzije_tereta" required>
-            </div>
-            <div class="form-group">
-                <label for="mestoPolaska">Mesto Polaska:</label>
-                <input type="text" id="mestoPolaska" name="mestoPolaska" required>
-            </div>
-            <div class="form-group">
-                <label for="mestoIsporuke">Mesto Isporuke:</label>
-                <input type="text" id="mestoIsporuke" name="mestoIsporuke" required>
-            </div>
-            <div class="form-group">
-                <label for="datum_polaska">Datum Polaska:</label>
-                <input type="date" id="datum_polaska" name="datum_polaska" required>
-            </div>
-            <div class="form-group">
-                <label for="datum_isporuke">Datum Isporuke:</label>
-                <input type="date" id="datum_isporuke" name="datum_isporuke" required>
-            </div>
-            <div class="form-group">
-                <label for="dodatan_opis">Dodatni Opis:</label>
-                <textarea id="dodatan_opis" name="dodatan_opis" rows="3" required></textarea>
-            </div>
-            <div class="form-group">
-                <label for="cena">Cena (RSD):</label>
-                <input type="text" id="cena" name="cena" required>
-            </div>
-            <button type="submit">Dodaj Ponudu</button>
+            <!-- Forma za dodavanje ponude -->
         </form>
     </div>
 
@@ -282,97 +242,49 @@
         document.getElementById('popupDetailsClose').addEventListener('click', hideDetailsPopup);
         document.getElementById('popupDetailsOverlay').addEventListener('click', hideDetailsPopup);
 
-        function formatDateTime(date) {
-            const dt = new Date(date);
-            return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}T00:00:00`;
-        }
-
-        async function addOffer(event) {
-            event.preventDefault();
-
+        async function fetchOfferHistory() {
             const userId = getUserId();
-            const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/Dodaj`;
-
-            const offerData = {
-                poslodavac_id: userId,
-                naziv_tereta: document.getElementById('naziv_tereta').value,
-                vrsta_tereta: document.getElementById('vrsta_tereta').value,
-                tezina_tereta: document.getElementById('tezina_tereta').value,
-                dimenzije_tereta: document.getElementById('dimenzije_tereta').value,
-                mestoPolaska: document.getElementById('mestoPolaska').value,
-                mestoIsporuke: document.getElementById('mestoIsporuke').value,
-                datum_polaska: formatDateTime(document.getElementById('datum_polaska').value),
-                datum_isporuke: formatDateTime(document.getElementById('datum_isporuke').value),
-                dodatan_opis: document.getElementById('dodatan_opis').value,
-                cena: document.getElementById('cena').value
-            };
-
-            const queryString = new URLSearchParams(offerData).toString();
-            const fullUrl = `${apiUrl}?${queryString}`;
-
+            const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/PoslodavacID?poslodavac_id=${userId}`;
+    
             try {
-                const response = await fetch(fullUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
+                const response = await fetch(apiUrl);
+                const offerData = await response.json();
 
-                if (response.ok) {
-                    alert('Ponuda uspešno dodata!');
-                    hidePopup();
-                    fetchOfferHistory(); // Osvežava istoriju ponuda
+                if (response.ok && Array.isArray(offerData) && offerData.length > 0) {
+                    const offerHistoryDiv = document.getElementById('offerHistory');
+                    offerHistoryDiv.innerHTML = '';
+
+                    offerData.forEach(offer => {
+                        const offerElement = document.createElement('div');
+                        offerElement.className = 'offer-item';
+
+                        if (offer.VozacId) {
+                            offerElement.style.backgroundColor = 'lightgreen'; // Svetlo zelena pozadina
+                            offerElement.innerHTML = `<h3>${offer.NazivTereta}</h3>`;
+                        } else {
+                            offerElement.innerHTML = `
+                                <h3>${offer.NazivTereta}</h3>
+                                <button onclick="deleteOffer(${offer.Id})">X</button>
+                            `;
+                        }
+
+                        offerElement.querySelector('h3').addEventListener('click', () => showOfferDetails(offer));
+                        offerHistoryDiv.appendChild(offerElement);
+                    });
                 } else {
-                    alert('Došlo je do greške pri dodavanju ponude.');
+                    document.getElementById('offerHistory').innerHTML = '<p>Trenutno nema ponuda.</p>';
                 }
             } catch (error) {
-                alert('Greška: ' + error.message);
+                alert('Došlo je do greške pri preuzimanju ponuda: ' + error.message);
             }
         }
 
-        document.getElementById('offerForm').addEventListener('submit', addOffer);
-
-        async function fetchOfferHistory() {
-    const userId = getUserId();
-    const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda/PoslodavacID?poslodavac_id=${userId}`;
-    
-    try {
-        const response = await fetch(apiUrl);
-        const offerData = await response.json();
-
-        if (response.ok && Array.isArray(offerData) && offerData.length > 0) {
-            const offerHistoryDiv = document.getElementById('offerHistory');
-            offerHistoryDiv.innerHTML = '';
-
-            offerData.forEach(offer => {
-                const offerElement = document.createElement('div');
-                offerElement.className = 'offer-item';
-
-                // Provera da li ponuda ima VozacId
-                if (offer.VozacId) {
-                    offerElement.style.backgroundColor = 'lightgreen'; // Dodaje svetlo zelenu pozadinu
-                    offerElement.innerHTML = `<h3>${offer.NazivTereta}</h3>`;
-                } else {
-                    offerElement.innerHTML = `
-                        <h3>${offer.NazivTereta}</h3>
-                        <button onclick="deleteOffer(${offer.Id})">X</button>
-                    `;
-                }
-
-                offerElement.querySelector('h3').addEventListener('click', () => showOfferDetails(offer));
-                offerHistoryDiv.appendChild(offerElement);
-            });
-        } else {
-            document.getElementById('offerHistory').innerHTML = '<p>Trenutno nema ponuda.</p>';
-        }
-    } catch (error) {
-        alert('Došlo je do greške pri preuzimanju ponuda: ' + error.message);
-    }
-}
-
         function showOfferDetails(offer) {
-            document.getElementById('popupTitle').innerText = `${offer.NazivTereta} (${offer.VrstaTereta})`;
-            document.getElementById('popupContent').innerHTML = `
+            const popupContent = document.getElementById('popupContent');
+            const popupTitle = document.getElementById('popupTitle');
+
+            popupTitle.innerText = `${offer.NazivTereta} (${offer.VrstaTereta})`;
+            popupContent.innerHTML = `
                 <p><strong>Težina:</strong> ${offer.TezinaTereta} kg</p>
                 <p><strong>Dimenzije:</strong> ${offer.DimenzijeTereta}</p>
                 <p><strong>Datum polaska:</strong> ${new Date(offer.DatumPolaska).toLocaleDateString()}</p>
@@ -382,32 +294,40 @@
                 <p><strong>Cena:</strong> ${offer.Cena} RSD</p>
                 <p><strong>Dodatni opis:</strong> ${offer.DodatanOpis}</p>
             `;
+
+            if (offer.VozacId) {
+                sessionStorage.setItem('vozacId', offer.VozacId); // Čuvanje ID vozača u session storage
+                popupContent.innerHTML += `
+                    <p><a href="vozac.html">Pogledaj profil vozača</a></p>
+                `;
+            }
+
             showDetailsPopup();
         }
 
         async function deleteOffer(offerId) {
-    if (confirm('Da li ste sigurni da želite da obrišete ovu ponudu?')) {
-        const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda?id=${offerId}`;
+            if (confirm('Da li ste sigurni da želite da obrišete ovu ponudu?')) {
+                const apiUrl = `https://kamioniapi20240730231858.azurewebsites.net/api/Ponuda?id=${offerId}`;
 
-        try {
-            const response = await fetch(apiUrl, {
-                method: 'DELETE',
-                headers: {
-                    'accept': '*/*'
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'DELETE',
+                        headers: {
+                            'accept': '*/*'
+                        }
+                    });
+
+                    if (response.ok) {
+                        alert('Ponuda je uspešno obrisana.');
+                        fetchOfferHistory(); // Osvežava istoriju ponuda
+                    } else {
+                        alert('Došlo je do greške pri brisanju ponude.');
+                    }
+                } catch (error) {
+                    alert('Greška: ' + error.message);
                 }
-            });
-
-            if (response.ok) {
-                alert('Ponuda je uspešno obrisana.');
-                fetchOfferHistory(); // Osvežava istoriju ponuda
-            } else {
-                alert('Došlo je do greške pri brisanju ponude.');
             }
-        } catch (error) {
-            alert('Greška: ' + error.message);
         }
-    }
-}
 
         document.addEventListener('DOMContentLoaded', fetchOfferHistory);
     </script>

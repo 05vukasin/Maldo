@@ -407,16 +407,18 @@
 
         if (Array.isArray(voznjeData)) {
             voznjeData.forEach(voznja => {
-                const datumPolaska = new Date(voznja.datum_polaska);
-                const datumIsporuke = new Date(voznja.datum_isporuke);
-
                 const voznjaElement = document.createElement('li');
                 voznjaElement.className = 'voznja-item';
                 voznjaElement.innerHTML = `
                     <p><strong>Naziv Tereta:</strong> ${voznja.naziv_tereta}</p>
-                    
                     <p><strong>Cena:</strong> ${voznja.cena} RSD</p>
                 `;
+                
+                voznjaElement.addEventListener('click', () => {
+                    showPonudaDetails(voznja);
+                    sessionStorage.setItem('poslodavacId', voznja.poslodavac_id);
+                });
+
                 voznjeList.appendChild(voznjaElement);
             });
         } else {
@@ -442,6 +444,7 @@ function showPonudaDetails(voznja) {
         <p><strong>Datum Isporuke:</strong> ${new Date(voznja.datum_isporuke).toLocaleDateString()}</p>
         <p><strong>Cena:</strong> ${voznja.cena} RSD</p>
         <p><strong>Dodatni Opis:</strong> ${voznja.dodatan_opis}</p>
+        <p><a href="poslodavac.html">Pogledaj Profil Poslodavca</a></p>
     `;
     document.getElementById('ponudaPopup').style.display = 'block';
 }
@@ -451,7 +454,6 @@ function hidePonudaPopup() {
 }
 
 document.addEventListener('DOMContentLoaded', fetchIstorijaVoznji);
-
 
     </script>
     
